@@ -1,0 +1,67 @@
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: liam_bday_nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php
+    networks:
+      - liam_bday_network
+
+  php:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    container_name: liam_bday_php
+    volumes:
+      - ./:/var/www/html
+    networks:
+      - liam_bday_network
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:8.0
+    container_name: liam_bday_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: liam_birthday
+      MYSQL_USER: liam_user
+      MYSQL_PASSWORD: liam_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - liam_bday_network
+
+  composer:
+    image: composer:latest
+    container_name: liam_bday_composer
+    volumes:
+      - ./:/var/www/html
+    working_dir: /var/www/html
+    networks:
+      - liam_bday_network
+    command: install --ignore-platform-reqs
+
+  node:
+    image: node:20-alpine
+    container_name: liam_bday_node
+    volumes:
+      - ./:/var/www/html
+    working_dir: /var/www/html
+    networks:
+      - liam_bday_network
+    tty: true
+
+volumes:
+  mysql_data:
+
+networks:
+  liam_bday_network:
+    driver: bridge
