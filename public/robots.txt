@@ -1,2 +1,7 @@
 User-agent: *
-Disallow:
+Allow: /
+
+# This is a private birthday party website
+# Feel free to crawl the public pages
+Disallow: /admin/
+Disallow: /invite/

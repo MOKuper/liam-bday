@@ -12,7 +12,8 @@
       "Bash(docker-compose up:*)",
       "Bash(docker-compose exec:*)",
       "Bash(curl:*)",
-      "Bash(docker exec:*)"
+      "Bash(docker exec:*)",
+      "Bash(chmod:*)"
     ],
     "deny": []
   }
