@@ -29,10 +29,10 @@ echo "📁 Setting up project directory..."
 mkdir -p $PROJECT_DIR
 cd $PROJECT_DIR
 
-# Clone repository (update this with your actual repo)
+# Clone repository using SSH
 echo "📥 Cloning repository..."
 if [ ! -d ".git" ]; then
-    git clone https://github.com/MOKuper/liam-bday.git .
+    git clone git@github.com:MOKuper/liam-bday.git .
 else
     git pull origin main
 fi

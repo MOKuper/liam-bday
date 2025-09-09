@@ -46,7 +46,7 @@ cd $APP_DIR
 
 # Clone repository
 echo "📥 Cloning repository..."
-git clone https://github.com/MOKuper/liam-bday.git .
+git clone git@github.com:MOKuper/liam-bday.git .
 
 # Install composer dependencies
 echo "📦 Installing PHP dependencies..."
