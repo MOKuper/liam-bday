@@ -53,7 +53,7 @@ This guide will help you deploy the birthday party website to Digital Ocean usin
    git add .
    git commit -m "Initial commit - Liam's birthday website"
    git branch -M main
-   git remote add origin https://github.com/YOUR_USERNAME/liam-bday.git
+   git remote add origin https://github.com/MOKuper/liam-bday.git
    git push -u origin main
    ```
 
@@ -78,7 +78,7 @@ This guide will help you deploy the birthday party website to Digital Ocean usin
 
 2. **Update GitHub repository URL** in `deploy-setup.sh`:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/liam-bday.git .
+   git clone https://github.com/MOKuper/liam-bday.git .
    ```
 
 ## Step 4: Deploy

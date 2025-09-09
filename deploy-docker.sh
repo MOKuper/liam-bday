@@ -32,7 +32,7 @@ cd $PROJECT_DIR
 # Clone repository (update this with your actual repo)
 echo "📥 Cloning repository..."
 if [ ! -d ".git" ]; then
-    git clone https://github.com/YOUR_USERNAME/liam-bday.git .
+    git clone https://github.com/MOKuper/liam-bday.git .
 else
     git pull origin main
 fi
@@ -76,10 +76,10 @@ docker exec liam-bday-app chown -R www-data:www-data /var/www/storage /var/www/b
 # Get SSL certificate (if using port 80/443)
 if docker-compose -f docker-compose.production.yml ps | grep -q "nginx-proxy.*Up"; then
     echo "🔒 Setting up SSL certificate..."
-    
+
     # Stop nginx-proxy temporarily for certbot
     docker-compose -f docker-compose.production.yml stop nginx-proxy
-    
+
     # Run certbot
     docker run --rm -it \
         -v /etc/letsencrypt:/etc/letsencrypt \
@@ -91,10 +91,10 @@ if docker-compose -f docker-compose.production.yml ps | grep -q "nginx-proxy.*Up
         --agree-tos \
         --no-eff-email \
         -d $DOMAIN -d www.$DOMAIN
-    
+
     # Restart nginx-proxy
     docker-compose -f docker-compose.production.yml start nginx-proxy
-    
+
     # Set up auto-renewal
     echo "🔄 Setting up SSL auto-renewal..."
     (crontab -l 2>/dev/null; echo "0 12 * * * cd $PROJECT_DIR && docker run --rm -v /etc/letsencrypt:/etc/letsencrypt -v /var/www/certbot:/var/www/certbot certbot/certbot renew --quiet && docker-compose -f docker-compose.production.yml restart nginx-proxy") | crontab -
@@ -124,7 +124,7 @@ echo "   Username: admin_matthew, Password: helloworld"
 
 echo ""
 echo "📊 Useful commands:"
-echo "   View logs: docker-compose -f docker-compose.production.yml logs -f"
-echo "   Restart: docker-compose -f docker-compose.production.yml restart"
-echo "   Stop: docker-compose -f docker-compose.production.yml down"
+echo "   View logs: cd $PROJECT_DIR && docker-compose -f docker-compose.production.yml logs -f"
+echo "   Restart: cd $PROJECT_DIR && docker-compose -f docker-compose.production.yml restart"
+echo "   Stop: cd $PROJECT_DIR && docker-compose -f docker-compose.production.yml down"
 echo "   Update: cd $PROJECT_DIR && git pull && docker-compose -f docker-compose.production.yml up -d --build"

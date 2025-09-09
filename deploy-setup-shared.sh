@@ -32,7 +32,7 @@ cd $APP_DIR
 
 # Clone repository (you'll need to update this with your actual repo)
 echo "📥 Cloning repository..."
-git clone https://github.com/YOUR_USERNAME/liam-bday.git .
+git clone https://github.com/MOKuper/liam-bday.git .
 
 # Install composer dependencies
 echo "📦 Installing PHP dependencies..."
