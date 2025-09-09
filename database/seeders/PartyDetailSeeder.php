@@ -18,16 +18,17 @@ class PartyDetailSeeder extends Seeder
             'child_name' => 'Liam',
             'child_age' => 5,
             'party_date' => Carbon::now()->addDays(30)->toDateString(),
-            'start_time' => '14:00:00',
-            'end_time' => '17:00:00',
-            'venue_name' => 'Fun Zone Play Center',
-            'venue_address' => '123 Birthday Lane, Party City, PC 12345',
-            'venue_map_url' => 'https://maps.google.com',
-            'parking_info' => 'Free parking available in the venue lot. Overflow parking across the street.',
-            'theme' => 'Dinosaur Adventure',
-            'activities' => 'Bouncy castle, face painting, treasure hunt, and dino egg excavation!',
-            'parent_contact_info' => 'Mom: Sarah (555) 123-4567 | Dad: John (555) 987-6543',
+            'start_time' => '11:45:00',
+            'end_time' => '13:45:00',
+            'venue_name' => 'VROG',
+            'venue_address' => 'Mr. Visserplein 7 1011 RD Amsterdam',
+            'venue_map_url' => 'https://maps.app.goo.gl/K7w6wexZSB7U5Y1BA',
+            'parking_info' => '',
+            'theme' => 'Trampolines & Freerunning',
+            'activities' => '',
+            'parent_contact_info' => '',
             'gift_suggestions' => 'Liam loves dinosaurs, LEGO, books, and art supplies!',
         ]);
     }
 }
+

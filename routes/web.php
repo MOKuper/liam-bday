@@ -61,6 +61,10 @@ Route::prefix('admin')->name('admin.')->middleware('auth.basic.custom')->group(f
     Route::post('/guests/{guest}/generate-qr', [AdminController::class, 'generateQrCode'])->name('guests.generate-qr');
     Route::post('/guests/generate-all-qr', [AdminController::class, 'generateAllQrCodes'])->name('guests.generate-all-qr');
     Route::post('/guests/{guest}/upload-photo', [AdminController::class, 'uploadFriendshipPhoto'])->name('guests.upload-photo');
+    Route::post('/guests/{guest}/toggle-language', [AdminController::class, 'toggleGuestLanguage'])->name('guests.toggle-language');
+    Route::get('/guests/{guest}/edit', [AdminController::class, 'editGuest'])->name('guests.edit');
+    Route::put('/guests/{guest}', [AdminController::class, 'updateGuest'])->name('guests.update');
+    Route::delete('/guests/{guest}', [AdminController::class, 'deleteGuest'])->name('guests.destroy');
     
     // Gift management routes
     Route::get('/gifts', [GiftController::class, 'adminIndex'])->name('gifts.index');

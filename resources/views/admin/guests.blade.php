@@ -152,9 +152,15 @@
             
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Friendship Photo (Liam + Guest)</label>
-                <input type="file" name="friendship_photo" accept="image/*"
-                       class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100">
+                <button type="button" id="add-photo-btn" 
+                        class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-full text-sm mb-2">
+                    📷 Choose & Crop Photo
+                </button>
                 <p class="text-xs text-gray-500 mt-1">Upload a photo of Liam and this guest together (optional)</p>
+                
+                <!-- Hidden file input -->
+                <input type="file" id="add-photo-input" accept="image/*" class="hidden">
+                <input type="hidden" name="cropped_photo_data" id="add-cropped-photo-data">
             </div>
             
             <div class="md:col-span-2">
@@ -193,6 +199,7 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">RSVP Status</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">QR Code</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invitation Link</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -238,10 +245,11 @@
                             @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                {{ $guest->preferred_language == 'nl' ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800' }}">
+                            <button onclick="toggleLanguage({{ $guest->id }}, '{{ $guest->preferred_language }}')"
+                                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full cursor-pointer hover:opacity-80 transition-opacity
+                                        {{ $guest->preferred_language == 'nl' ? 'bg-orange-100 text-orange-800 hover:bg-orange-200' : 'bg-blue-100 text-blue-800 hover:bg-blue-200' }}">
                                 {{ $guest->preferred_language == 'nl' ? '🇳🇱 Dutch' : '🇬🇧 English' }}
-                            </span>
+                            </button>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             @if($guest->rsvp)
@@ -276,6 +284,18 @@
                                 </button>
                             </div>
                         </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <div class="flex items-center space-x-2">
+                                <button onclick="editGuest({{ $guest->id }})" 
+                                        class="text-blue-600 hover:text-blue-800 font-medium">
+                                    ✏️ Edit
+                                </button>
+                                <button onclick="deleteGuest({{ $guest->id }}, '{{ $guest->name }}')" 
+                                        class="text-red-600 hover:text-red-800 font-medium">
+                                    🗑️ Delete
+                                </button>
+                            </div>
+                        </td>
                     </tr>
                     @endforeach
                 </tbody>
@@ -286,35 +306,56 @@
 
 <!-- Photo Upload Modal -->
 <div id="photo-upload-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+    <div class="relative top-10 mx-auto p-5 border max-w-2xl shadow-lg rounded-md bg-white">
         <div class="mt-3">
             <h3 class="text-lg font-bold text-gray-900 mb-4" id="modal-title">Upload Friendship Photo</h3>
             
-            <form id="photo-upload-form" enctype="multipart/form-data">
-                @csrf
+            <!-- Step 1: File Selection -->
+            <div id="file-selection-step">
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">
                         Select Photo (Liam + Guest)
                     </label>
-                    <input type="file" name="friendship_photo" accept="image/*" required
+                    <input type="file" id="photo-file-input" accept="image/*" required
                            class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                     <p class="text-xs text-gray-500 mt-1">Max file size: 5MB</p>
                 </div>
                 
                 <div class="flex items-center space-x-3">
-                    <button type="submit" 
+                    <button type="button" onclick="closePhotoUpload()" 
+                            class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-4 rounded-full text-sm">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Step 2: Cropping Interface -->
+            <div id="cropping-step" class="hidden">
+                <div class="mb-4">
+                    <div class="bg-gray-100 rounded-lg p-4 max-h-96 overflow-hidden">
+                        <img id="crop-image" class="max-w-full" style="display: block;">
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">Drag to move, use corners to resize the crop area</p>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <button type="button" id="upload-cropped-btn"
                             class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full text-sm">
-                        Upload Photo
+                        Upload Cropped Photo
+                    </button>
+                    <button type="button" onclick="resetCropper()" 
+                            class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-full text-sm">
+                        Choose Different Photo
                     </button>
                     <button type="button" onclick="closePhotoUpload()" 
                             class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-4 rounded-full text-sm">
                         Cancel
                     </button>
                 </div>
-                
-                <!-- Status message -->
-                <div id="upload-status" class="mt-3 hidden"></div>
-            </form>
+            </div>
+            
+            <!-- Status message -->
+            <div id="upload-status" class="mt-3 hidden"></div>
         </div>
     </div>
 </div>
@@ -322,6 +363,7 @@
 @push('scripts')
 <script>
     let currentGuestId = null;
+    let cropper = null;
 
     // Photo upload modal functions
     function openPhotoUpload(guestId, guestName) {
@@ -329,72 +371,139 @@
         document.getElementById('modal-title').textContent = `Upload Friendship Photo for ${guestName}`;
         document.getElementById('photo-upload-modal').classList.remove('hidden');
         document.getElementById('upload-status').classList.add('hidden');
-        document.getElementById('photo-upload-form').reset();
+        resetToFileSelection();
     }
 
     function closePhotoUpload() {
         document.getElementById('photo-upload-modal').classList.add('hidden');
         currentGuestId = null;
+        resetToFileSelection();
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+    }
+    
+    function resetToFileSelection() {
+        document.getElementById('file-selection-step').classList.remove('hidden');
+        document.getElementById('cropping-step').classList.add('hidden');
+        document.getElementById('photo-file-input').value = '';
+    }
+    
+    function resetCropper() {
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+        resetToFileSelection();
     }
 
-    // Handle form submission
-    document.getElementById('photo-upload-form').addEventListener('submit', function(e) {
-        e.preventDefault();
+    // Handle file selection
+    document.getElementById('photo-file-input').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
         
-        if (!currentGuestId) return;
+        // Validate file size (5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('File size must be less than 5MB');
+            return;
+        }
         
-        const formData = new FormData(this);
-        const statusDiv = document.getElementById('upload-status');
-        const submitButton = this.querySelector('button[type="submit"]');
-        const originalButtonText = submitButton.textContent;
-        
-        // Update UI
-        submitButton.disabled = true;
-        submitButton.textContent = 'Uploading...';
-        statusDiv.classList.add('hidden');
-        
-        // Upload photo
-        fetch(`/admin/guests/${currentGuestId}/upload-photo`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
+        // Show cropping interface
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const image = document.getElementById('crop-image');
+            image.src = event.target.result;
+            
+            // Hide file selection, show cropping
+            document.getElementById('file-selection-step').classList.add('hidden');
+            document.getElementById('cropping-step').classList.remove('hidden');
+            
+            // Initialize cropper
+            if (cropper) {
+                cropper.destroy();
             }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Show success message
-                statusDiv.className = 'mt-3 bg-green-100 border border-green-400 text-green-700 px-3 py-2 rounded text-sm';
-                statusDiv.textContent = data.message;
-                statusDiv.classList.remove('hidden');
-                
-                // Update the photo in the table
-                setTimeout(() => {
-                    location.reload(); // Simple refresh to show new photo
-                }, 1000);
-                
-                // Close modal after delay
-                setTimeout(() => {
-                    closePhotoUpload();
-                }, 2000);
-            } else {
-                // Show error
-                statusDiv.className = 'mt-3 bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded text-sm';
-                statusDiv.textContent = data.message || 'Upload failed. Please try again.';
-                statusDiv.classList.remove('hidden');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            statusDiv.className = 'mt-3 bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded text-sm';
-            statusDiv.textContent = 'Upload failed. Please try again.';
-            statusDiv.classList.remove('hidden');
-        })
-        .finally(() => {
-            submitButton.disabled = false;
-            submitButton.textContent = originalButtonText;
+            
+            cropper = new Cropper(image, {
+                aspectRatio: 1, // Square crop
+                viewMode: 1,
+                autoCropArea: 0.8,
+                movable: true,
+                scalable: true,
+                rotatable: false,
+                zoomable: true
+            });
+        };
+        reader.readAsDataURL(file);
+    });
+    
+    // Handle cropped image upload
+    document.getElementById('upload-cropped-btn').addEventListener('click', function() {
+        if (!cropper || !currentGuestId) return;
+        
+        const canvas = cropper.getCroppedCanvas({
+            width: 400,
+            height: 400,
+            imageSmoothingQuality: 'high'
         });
+        
+        canvas.toBlob(function(blob) {
+            const formData = new FormData();
+            formData.append('friendship_photo', blob, 'cropped-photo.jpg');
+            formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+            
+            const statusDiv = document.getElementById('upload-status');
+            const uploadButton = document.getElementById('upload-cropped-btn');
+            const originalButtonText = uploadButton.textContent;
+            
+            // Update UI
+            uploadButton.disabled = true;
+            uploadButton.textContent = 'Uploading...';
+            statusDiv.classList.add('hidden');
+            
+            // Upload cropped photo
+            fetch(`/admin/guests/${currentGuestId}/upload-photo`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    statusDiv.className = 'mt-3 bg-green-100 border border-green-400 text-green-700 px-3 py-2 rounded text-sm';
+                    statusDiv.textContent = data.message;
+                    statusDiv.classList.remove('hidden');
+                    
+                    // Update the photo in the table
+                    setTimeout(() => {
+                        location.reload(); // Simple refresh to show new photo
+                    }, 1000);
+                    
+                    // Close modal after delay
+                    setTimeout(() => {
+                        closePhotoUpload();
+                    }, 2000);
+                } else {
+                    // Show error
+                    statusDiv.className = 'mt-3 bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded text-sm';
+                    statusDiv.textContent = data.message || 'Upload failed. Please try again.';
+                    statusDiv.classList.remove('hidden');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                statusDiv.className = 'mt-3 bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded text-sm';
+                statusDiv.textContent = 'Upload failed. Please try again.';
+                statusDiv.classList.remove('hidden');
+            })
+            .finally(() => {
+                uploadButton.disabled = false;
+                uploadButton.textContent = originalButtonText;
+            });
+        }, 'image/jpeg', 0.9);
     });
 
     // Close modal when clicking outside
@@ -414,6 +523,186 @@
                     this.textContent = originalText;
                 }, 1000);
             });
+        }
+    });
+
+    // Language toggle functionality
+    function toggleLanguage(guestId, currentLanguage) {
+        const newLanguage = currentLanguage === 'nl' ? 'en' : 'nl';
+        
+        fetch(`/admin/guests/${guestId}/toggle-language`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ language: newLanguage })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload(); // Simple refresh to update the UI
+            } else {
+                alert('Failed to update language. Please try again.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to update language. Please try again.');
+        });
+    }
+
+    // Edit guest functionality
+    function editGuest(guestId) {
+        window.location.href = `/admin/guests/${guestId}/edit`;
+    }
+
+    // Delete guest functionality
+    function deleteGuest(guestId, guestName) {
+        if (confirm(`Are you sure you want to delete ${guestName}? This action cannot be undone.`)) {
+            fetch(`/admin/guests/${guestId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload(); // Simple refresh to update the UI
+                } else {
+                    alert('Failed to delete guest. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to delete guest. Please try again.');
+            });
+        }
+    }
+
+    // Add guest form photo cropping functionality
+    let addCropper = null;
+    let addCropModal = null;
+    
+    // Create add guest crop modal
+    function createAddCropModal() {
+        const modal = document.createElement('div');
+        modal.id = 'add-crop-modal';
+        modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50';
+        modal.innerHTML = `
+            <div class="relative top-10 mx-auto p-5 border max-w-2xl shadow-lg rounded-md bg-white">
+                <div class="mt-3">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4">Crop Friendship Photo</h3>
+                    
+                    <div class="mb-4">
+                        <div class="bg-gray-100 rounded-lg p-4 max-h-96 overflow-hidden">
+                            <img id="add-crop-image" class="max-w-full" style="display: block;">
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">Drag to move, use corners to resize the crop area</p>
+                    </div>
+                    
+                    <div class="flex items-center space-x-3">
+                        <button type="button" id="add-apply-crop-btn"
+                                class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-full text-sm">
+                            Apply Crop
+                        </button>
+                        <button type="button" id="add-cancel-crop-btn"
+                                class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-4 rounded-full text-sm">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        return modal;
+    }
+    
+    // Handle add guest photo selection
+    document.getElementById('add-photo-btn').addEventListener('click', function() {
+        document.getElementById('add-photo-input').click();
+    });
+    
+    document.getElementById('add-photo-input').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        // Validate file size (5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('File size must be less than 5MB');
+            return;
+        }
+        
+        // Create modal if it doesn't exist
+        if (!addCropModal) {
+            addCropModal = createAddCropModal();
+        }
+        
+        // Show cropping modal
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const image = document.getElementById('add-crop-image');
+            image.src = event.target.result;
+            
+            // Show modal
+            addCropModal.classList.remove('hidden');
+            
+            // Initialize cropper
+            if (addCropper) {
+                addCropper.destroy();
+            }
+            
+            addCropper = new Cropper(image, {
+                aspectRatio: 1, // Square crop
+                viewMode: 1,
+                autoCropArea: 0.8,
+                movable: true,
+                scalable: true,
+                rotatable: false,
+                zoomable: true
+            });
+        };
+        reader.readAsDataURL(file);
+    });
+    
+    // Handle add crop apply button (event delegation)
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.id === 'add-apply-crop-btn') {
+            if (!addCropper) return;
+            
+            const canvas = addCropper.getCroppedCanvas({
+                width: 400,
+                height: 400,
+                imageSmoothingQuality: 'high'
+            });
+            
+            // Convert to base64 and store in hidden field
+            const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+            document.getElementById('add-cropped-photo-data').value = croppedDataUrl;
+            
+            // Update button text to show photo is selected
+            document.getElementById('add-photo-btn').innerHTML = '✅ Photo Selected';
+            document.getElementById('add-photo-btn').classList.remove('bg-purple-500', 'hover:bg-purple-600');
+            document.getElementById('add-photo-btn').classList.add('bg-green-500', 'hover:bg-green-600');
+            
+            // Close modal
+            addCropModal.classList.add('hidden');
+            if (addCropper) {
+                addCropper.destroy();
+                addCropper = null;
+            }
+        }
+        
+        if (e.target && e.target.id === 'add-cancel-crop-btn') {
+            addCropModal.classList.add('hidden');
+            document.getElementById('add-photo-input').value = '';
+            if (addCropper) {
+                addCropper.destroy();
+                addCropper = null;
+            }
         }
     });
 </script>

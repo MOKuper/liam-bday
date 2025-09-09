@@ -55,15 +55,29 @@ class AdminController extends Controller
             'parent_phone_nl' => 'nullable|string|max:20',
             'expected_attendees' => 'nullable|integer|min:1|max:10',
             'friendship_photo' => 'nullable|image|max:5120', // 5MB max
+            'cropped_photo_data' => 'nullable|string', // Base64 cropped image data
         ]);
         
-        // Handle friendship photo upload
-        if ($request->hasFile('friendship_photo')) {
+        // Handle cropped photo data (from add form)
+        if ($request->filled('cropped_photo_data')) {
+            // Decode base64 image
+            $imageData = $request->input('cropped_photo_data');
+            $imageData = str_replace('data:image/jpeg;base64,', '', $imageData);
+            $imageData = base64_decode($imageData);
+            
+            // Generate filename and save
+            $filename = 'friendship-photos/' . Str::random(40) . '.jpg';
+            Storage::disk('public')->put($filename, $imageData);
+            
+            $validated['friendship_photo_path'] = $filename;
+        }
+        // Handle regular file upload (fallback)
+        elseif ($request->hasFile('friendship_photo')) {
             $validated['friendship_photo_path'] = $request->file('friendship_photo')->store('friendship-photos', 'public');
         }
         
-        // Remove the file from validated array since it's not a database field
-        unset($validated['friendship_photo']);
+        // Remove non-database fields from validated array
+        unset($validated['friendship_photo'], $validated['cropped_photo_data']);
         
         $guest = Guest::create($validated);
         
@@ -355,6 +369,101 @@ class AdminController extends Controller
             'success' => true,
             'message' => 'Friendship photo uploaded successfully!',
             'photo_url' => Storage::url($path)
+        ]);
+    }
+
+    public function toggleGuestLanguage(Request $request, Guest $guest)
+    {
+        $validated = $request->validate([
+            'language' => 'required|in:en,nl'
+        ]);
+
+        $guest->update(['preferred_language' => $validated['language']]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Language updated successfully!'
+        ]);
+    }
+
+    public function editGuest(Guest $guest)
+    {
+        return view('admin.edit-guest', compact('guest'));
+    }
+
+    public function updateGuest(Request $request, Guest $guest)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'nullable|email|max:255',
+            'phone' => 'nullable|string|max:20',
+            'date_of_birth' => 'nullable|date',
+            'preferred_language' => 'nullable|in:en,nl',
+            'is_child' => 'boolean',
+            'parent_name' => 'nullable|string|max:255',
+            'parent_email' => 'nullable|email|max:255',
+            'parent_phone' => 'nullable|string|max:20',
+            'parent_name_nl' => 'nullable|string|max:255',
+            'parent_email_nl' => 'nullable|email|max:255',
+            'parent_phone_nl' => 'nullable|string|max:20',
+            'expected_attendees' => 'nullable|integer|min:1|max:10',
+            'friendship_photo' => 'nullable|image|max:5120', // 5MB max
+            'cropped_photo_data' => 'nullable|string', // Base64 cropped image data
+        ]);
+
+        // Handle cropped photo data (from edit form)
+        if ($request->filled('cropped_photo_data')) {
+            // Delete old photo if exists
+            if ($guest->friendship_photo_path) {
+                Storage::disk('public')->delete($guest->friendship_photo_path);
+            }
+            
+            // Decode base64 image
+            $imageData = $request->input('cropped_photo_data');
+            $imageData = str_replace('data:image/jpeg;base64,', '', $imageData);
+            $imageData = base64_decode($imageData);
+            
+            // Generate filename and save
+            $filename = 'friendship-photos/' . Str::random(40) . '.jpg';
+            Storage::disk('public')->put($filename, $imageData);
+            
+            $validated['friendship_photo_path'] = $filename;
+        }
+        // Handle regular file upload (fallback)
+        elseif ($request->hasFile('friendship_photo')) {
+            // Delete old photo if exists
+            if ($guest->friendship_photo_path) {
+                Storage::disk('public')->delete($guest->friendship_photo_path);
+            }
+            $validated['friendship_photo_path'] = $request->file('friendship_photo')->store('friendship-photos', 'public');
+        }
+
+        // Remove non-database fields from validated array
+        unset($validated['friendship_photo'], $validated['cropped_photo_data']);
+
+        $guest->update($validated);
+
+        return redirect()->route('admin.guests')->with('success', 'Guest updated successfully!');
+    }
+
+    public function deleteGuest(Guest $guest)
+    {
+        // Delete friendship photo if exists
+        if ($guest->friendship_photo_path) {
+            Storage::disk('public')->delete($guest->friendship_photo_path);
+        }
+
+        // Delete QR code if exists
+        if ($guest->qr_code_path) {
+            Storage::disk('public')->delete($guest->qr_code_path);
+        }
+
+        $guestName = $guest->name;
+        $guest->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Guest '{$guestName}' deleted successfully!"
         ]);
     }
 }
