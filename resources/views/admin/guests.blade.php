@@ -199,16 +199,26 @@
                     @foreach($guests as $guest)
                     <tr>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            @if($guest->friendship_photo_path)
-                                <img src="{{ Storage::url($guest->friendship_photo_path) }}" 
-                                     alt="Photo of {{ $guest->name }} and Liam"
-                                     class="w-16 h-16 rounded-lg object-cover cursor-pointer hover:opacity-80"
-                                     onclick="window.open(this.src)">
-                            @else
-                                <div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400">
-                                    📷
+                            <div class="relative group">
+                                @if($guest->friendship_photo_path)
+                                    <img src="{{ Storage::url($guest->friendship_photo_path) }}" 
+                                         alt="Photo of {{ $guest->name }} and Liam"
+                                         class="w-16 h-16 rounded-lg object-cover cursor-pointer hover:opacity-80"
+                                         onclick="window.open(this.src)">
+                                @else
+                                    <div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400">
+                                        📷
+                                    </div>
+                                @endif
+                                
+                                <!-- Upload button overlay -->
+                                <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
+                                    <button onclick="openPhotoUpload({{ $guest->id }}, '{{ $guest->name }}')" 
+                                            class="text-white text-xs font-bold px-2 py-1 rounded bg-blue-600 hover:bg-blue-700">
+                                        {{ $guest->friendship_photo_path ? 'Change' : 'Upload' }}
+                                    </button>
                                 </div>
-                            @endif
+                            </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm font-medium text-gray-900">{{ $guest->name }}</div>
@@ -274,9 +284,127 @@
     </div>
 </div>
 
+<!-- Photo Upload Modal -->
+<div id="photo-upload-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg font-bold text-gray-900 mb-4" id="modal-title">Upload Friendship Photo</h3>
+            
+            <form id="photo-upload-form" enctype="multipart/form-data">
+                @csrf
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Select Photo (Liam + Guest)
+                    </label>
+                    <input type="file" name="friendship_photo" accept="image/*" required
+                           class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    <p class="text-xs text-gray-500 mt-1">Max file size: 5MB</p>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <button type="submit" 
+                            class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full text-sm">
+                        Upload Photo
+                    </button>
+                    <button type="button" onclick="closePhotoUpload()" 
+                            class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-4 rounded-full text-sm">
+                        Cancel
+                    </button>
+                </div>
+                
+                <!-- Status message -->
+                <div id="upload-status" class="mt-3 hidden"></div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
-    // Show success message when copying
+    let currentGuestId = null;
+
+    // Photo upload modal functions
+    function openPhotoUpload(guestId, guestName) {
+        currentGuestId = guestId;
+        document.getElementById('modal-title').textContent = `Upload Friendship Photo for ${guestName}`;
+        document.getElementById('photo-upload-modal').classList.remove('hidden');
+        document.getElementById('upload-status').classList.add('hidden');
+        document.getElementById('photo-upload-form').reset();
+    }
+
+    function closePhotoUpload() {
+        document.getElementById('photo-upload-modal').classList.add('hidden');
+        currentGuestId = null;
+    }
+
+    // Handle form submission
+    document.getElementById('photo-upload-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        if (!currentGuestId) return;
+        
+        const formData = new FormData(this);
+        const statusDiv = document.getElementById('upload-status');
+        const submitButton = this.querySelector('button[type="submit"]');
+        const originalButtonText = submitButton.textContent;
+        
+        // Update UI
+        submitButton.disabled = true;
+        submitButton.textContent = 'Uploading...';
+        statusDiv.classList.add('hidden');
+        
+        // Upload photo
+        fetch(`/admin/guests/${currentGuestId}/upload-photo`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                statusDiv.className = 'mt-3 bg-green-100 border border-green-400 text-green-700 px-3 py-2 rounded text-sm';
+                statusDiv.textContent = data.message;
+                statusDiv.classList.remove('hidden');
+                
+                // Update the photo in the table
+                setTimeout(() => {
+                    location.reload(); // Simple refresh to show new photo
+                }, 1000);
+                
+                // Close modal after delay
+                setTimeout(() => {
+                    closePhotoUpload();
+                }, 2000);
+            } else {
+                // Show error
+                statusDiv.className = 'mt-3 bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded text-sm';
+                statusDiv.textContent = data.message || 'Upload failed. Please try again.';
+                statusDiv.classList.remove('hidden');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            statusDiv.className = 'mt-3 bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded text-sm';
+            statusDiv.textContent = 'Upload failed. Please try again.';
+            statusDiv.classList.remove('hidden');
+        })
+        .finally(() => {
+            submitButton.disabled = false;
+            submitButton.textContent = originalButtonText;
+        });
+    });
+
+    // Close modal when clicking outside
+    document.getElementById('photo-upload-modal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closePhotoUpload();
+        }
+    });
+
+    // Show success message when copying URLs
     document.querySelectorAll('button').forEach(btn => {
         if (btn.textContent === '📋') {
             btn.addEventListener('click', function() {

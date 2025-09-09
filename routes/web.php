@@ -60,6 +60,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth.basic.custom')->group(f
     Route::put('/party-details', [AdminController::class, 'updatePartyDetails'])->name('party-details.update');
     Route::post('/guests/{guest}/generate-qr', [AdminController::class, 'generateQrCode'])->name('guests.generate-qr');
     Route::post('/guests/generate-all-qr', [AdminController::class, 'generateAllQrCodes'])->name('guests.generate-all-qr');
+    Route::post('/guests/{guest}/upload-photo', [AdminController::class, 'uploadFriendshipPhoto'])->name('guests.upload-photo');
     
     // Gift management routes
     Route::get('/gifts', [GiftController::class, 'adminIndex'])->name('gifts.index');

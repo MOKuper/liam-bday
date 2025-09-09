@@ -8,6 +8,7 @@ use App\Models\Message;
 use App\Models\PartyDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 use League\Csv\Reader;
 use League\Csv\Statement;
 
@@ -331,5 +332,29 @@ class AdminController extends Controller
         };
         
         return response()->stream($callback, 200, $headers);
+    }
+
+    public function uploadFriendshipPhoto(Request $request, Guest $guest)
+    {
+        $request->validate([
+            'friendship_photo' => 'required|image|max:5120', // 5MB max
+        ]);
+
+        // Delete old photo if exists
+        if ($guest->friendship_photo_path) {
+            Storage::disk('public')->delete($guest->friendship_photo_path);
+        }
+
+        // Store new photo
+        $path = $request->file('friendship_photo')->store('friendship-photos', 'public');
+        
+        // Update guest record
+        $guest->update(['friendship_photo_path' => $path]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Friendship photo uploaded successfully!',
+            'photo_url' => Storage::url($path)
+        ]);
     }
 }
