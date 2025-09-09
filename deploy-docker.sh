@@ -13,9 +13,9 @@ PROJECT_DIR="/opt/liam-bday"
 
 echo "📋 This script will:"
 echo "   - Clone the repository to $PROJECT_DIR"
-echo "   - Build and run Docker containers"
-echo "   - Set up SSL certificates"
-echo "   - Run on ports 80/443 (or 8090 if you prefer)"
+echo "   - Build and run Docker containers (Laravel app on port 8090)"
+echo "   - Set up global nginx configuration"
+echo "   - Configure SSL certificates"
 echo ""
 read -p "Continue? (y/N): " -n 1 -r
 echo
@@ -73,31 +73,38 @@ docker exec liam-bday-app php artisan migrate --force
 docker exec liam-bday-app php artisan storage:link
 docker exec liam-bday-app chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 
-# Get SSL certificate (if using port 80/443)
-if docker-compose -f docker-compose.production.yml ps | grep -q "nginx-proxy.*Up"; then
-    echo "🔒 Setting up SSL certificate..."
+# Set up global nginx configuration
+echo "🌐 Setting up global nginx configuration..."
+cp nginx-site.conf /etc/nginx/sites-available/liam-bday
+ln -sf /etc/nginx/sites-available/liam-bday /etc/nginx/sites-enabled/
 
-    # Stop nginx-proxy temporarily for certbot
-    docker-compose -f docker-compose.production.yml stop nginx-proxy
+# Test nginx configuration
+nginx -t
 
+# Get SSL certificate if it doesn't exist
+if [ ! -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
+    echo "🔒 Getting SSL certificate..."
+    
+    # Stop nginx temporarily for certbot
+    systemctl stop nginx
+    
     # Run certbot
-    docker run --rm -it \
-        -v /etc/letsencrypt:/etc/letsencrypt \
-        -v /var/www/certbot:/var/www/certbot \
-        -p 80:80 \
-        certbot/certbot certonly \
+    certbot certonly \
         --standalone \
         --email admin@$DOMAIN \
         --agree-tos \
         --no-eff-email \
         -d $DOMAIN -d www.$DOMAIN
-
-    # Restart nginx-proxy
-    docker-compose -f docker-compose.production.yml start nginx-proxy
-
+    
+    # Start nginx
+    systemctl start nginx
+    
     # Set up auto-renewal
     echo "🔄 Setting up SSL auto-renewal..."
-    (crontab -l 2>/dev/null; echo "0 12 * * * cd $PROJECT_DIR && docker run --rm -v /etc/letsencrypt:/etc/letsencrypt -v /var/www/certbot:/var/www/certbot certbot/certbot renew --quiet && docker-compose -f docker-compose.production.yml restart nginx-proxy") | crontab -
+    (crontab -l 2>/dev/null; echo "0 12 * * * /usr/bin/certbot renew --quiet && systemctl reload nginx") | crontab -
+else
+    echo "🔒 SSL certificate already exists, reloading nginx..."
+    systemctl reload nginx
 fi
 
 # Show status
@@ -109,13 +116,8 @@ docker-compose -f docker-compose.production.yml ps
 
 echo ""
 echo "🌐 Your website is available at:"
-if docker-compose -f docker-compose.production.yml ps | grep -q "nginx-proxy.*Up"; then
-    echo "   https://$DOMAIN"
-    echo "   Admin: https://$DOMAIN/admin"
-else
-    echo "   http://your-server-ip:8090"
-    echo "   Admin: http://your-server-ip:8090/admin"
-fi
+echo "   https://$DOMAIN"
+echo "   Admin: https://$DOMAIN/admin"
 
 echo ""
 echo "🔧 Admin credentials:"

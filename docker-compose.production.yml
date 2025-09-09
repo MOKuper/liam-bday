@@ -40,21 +40,7 @@ services:
     networks:
       - liam-network
 
-  # Optional: Add a reverse proxy container for SSL
-  nginx-proxy:
-    image: nginx:alpine
-    container_name: liam-bday-proxy
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./docker/proxy.conf:/etc/nginx/conf.d/default.conf:ro
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-    depends_on:
-      - liam-bday
-    networks:
-      - liam-network
+# Global nginx will handle SSL and proxy to this container on port 8090
 
 networks:
   liam-network:
