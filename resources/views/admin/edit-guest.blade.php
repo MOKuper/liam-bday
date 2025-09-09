@@ -148,7 +148,7 @@
                     <div class="bg-gray-100 rounded-lg p-4 max-h-96 overflow-hidden">
                         <img id="edit-crop-image" class="max-w-full" style="display: block;">
                     </div>
-                    <p class="text-xs text-gray-500 mt-2">Drag to move, use corners to resize the crop area</p>
+                    <p class="text-xs text-gray-500 mt-2">Drag to move, resize the crop area as needed - any aspect ratio</p>
                 </div>
                 
                 <div class="flex items-center space-x-3">
@@ -200,13 +200,15 @@
             }
             
             editCropper = new Cropper(image, {
-                aspectRatio: 1, // Square crop
+                aspectRatio: NaN, // Free aspect ratio
                 viewMode: 1,
                 autoCropArea: 0.8,
                 movable: true,
                 scalable: true,
                 rotatable: false,
-                zoomable: true
+                zoomable: true,
+                minCropBoxWidth: 100,
+                minCropBoxHeight: 100
             });
         };
         reader.readAsDataURL(file);
@@ -217,8 +219,8 @@
         if (!editCropper) return;
         
         const canvas = editCropper.getCroppedCanvas({
-            width: 400,
-            height: 400,
+            maxWidth: 800,
+            maxHeight: 600,
             imageSmoothingQuality: 'high'
         });
         

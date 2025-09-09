@@ -220,10 +220,23 @@
                                 
                                 <!-- Upload button overlay -->
                                 <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
-                                    <button onclick="openPhotoUpload({{ $guest->id }}, '{{ $guest->name }}')" 
-                                            class="text-white text-xs font-bold px-2 py-1 rounded bg-blue-600 hover:bg-blue-700">
-                                        {{ $guest->friendship_photo_path ? 'Change' : 'Upload' }}
-                                    </button>
+                                    @if($guest->friendship_photo_path)
+                                        <div class="flex space-x-1">
+                                            <button onclick="openPhotoUpload({{ $guest->id }}, '{{ $guest->name }}')" 
+                                                    class="text-white text-xs font-bold px-2 py-1 rounded bg-blue-600 hover:bg-blue-700">
+                                                New
+                                            </button>
+                                            <button onclick="openRecropPhoto({{ $guest->id }}, '{{ $guest->name }}', '{{ Storage::url($guest->friendship_photo_path) }}')" 
+                                                    class="text-white text-xs font-bold px-2 py-1 rounded bg-green-600 hover:bg-green-700">
+                                                Re-crop
+                                            </button>
+                                        </div>
+                                    @else
+                                        <button onclick="openPhotoUpload({{ $guest->id }}, '{{ $guest->name }}')" 
+                                                class="text-white text-xs font-bold px-2 py-1 rounded bg-blue-600 hover:bg-blue-700">
+                                            Upload
+                                        </button>
+                                    @endif
                                 </div>
                             </div>
                         </td>
@@ -335,7 +348,7 @@
                     <div class="bg-gray-100 rounded-lg p-4 max-h-96 overflow-hidden">
                         <img id="crop-image" class="max-w-full" style="display: block;">
                     </div>
-                    <p class="text-xs text-gray-500 mt-2">Drag to move, use corners to resize the crop area</p>
+                    <p class="text-xs text-gray-500 mt-2">Drag to move, resize the crop area as needed - any aspect ratio</p>
                 </div>
                 
                 <div class="flex items-center space-x-3">
@@ -425,13 +438,15 @@
             }
             
             cropper = new Cropper(image, {
-                aspectRatio: 1, // Square crop
+                aspectRatio: NaN, // Free aspect ratio
                 viewMode: 1,
                 autoCropArea: 0.8,
                 movable: true,
                 scalable: true,
                 rotatable: false,
-                zoomable: true
+                zoomable: true,
+                minCropBoxWidth: 100,
+                minCropBoxHeight: 100
             });
         };
         reader.readAsDataURL(file);
@@ -442,8 +457,8 @@
         if (!cropper || !currentGuestId) return;
         
         const canvas = cropper.getCroppedCanvas({
-            width: 400,
-            height: 400,
+            maxWidth: 800,
+            maxHeight: 600,
             imageSmoothingQuality: 'high'
         });
         
@@ -601,7 +616,7 @@
                         <div class="bg-gray-100 rounded-lg p-4 max-h-96 overflow-hidden">
                             <img id="add-crop-image" class="max-w-full" style="display: block;">
                         </div>
-                        <p class="text-xs text-gray-500 mt-2">Drag to move, use corners to resize the crop area</p>
+                        <p class="text-xs text-gray-500 mt-2">Drag to move, resize the crop area as needed - any aspect ratio</p>
                     </div>
                     
                     <div class="flex items-center space-x-3">
@@ -656,13 +671,15 @@
             }
             
             addCropper = new Cropper(image, {
-                aspectRatio: 1, // Square crop
+                aspectRatio: NaN, // Free aspect ratio
                 viewMode: 1,
                 autoCropArea: 0.8,
                 movable: true,
                 scalable: true,
                 rotatable: false,
-                zoomable: true
+                zoomable: true,
+                minCropBoxWidth: 100,
+                minCropBoxHeight: 100
             });
         };
         reader.readAsDataURL(file);
@@ -674,8 +691,8 @@
             if (!addCropper) return;
             
             const canvas = addCropper.getCroppedCanvas({
-                width: 400,
-                height: 400,
+                maxWidth: 800,
+                maxHeight: 600,
                 imageSmoothingQuality: 'high'
             });
             
@@ -702,6 +719,166 @@
             if (addCropper) {
                 addCropper.destroy();
                 addCropper = null;
+            }
+        }
+    });
+    
+    // Re-crop existing photo functionality
+    let recropCropper = null;
+    let recropModal = null;
+    
+    // Create re-crop modal
+    function createRecropModal() {
+        const modal = document.createElement('div');
+        modal.id = 'recrop-modal';
+        modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50';
+        modal.innerHTML = `
+            <div class="relative top-10 mx-auto p-5 border max-w-4xl shadow-lg rounded-md bg-white">
+                <div class="mt-3">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4" id="recrop-title">Re-crop Photo</h3>
+                    
+                    <div class="mb-4">
+                        <div class="bg-gray-100 rounded-lg p-4 max-h-96 overflow-hidden">
+                            <img id="recrop-image" class="max-w-full" style="display: block;">
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">Drag to move, resize the crop area as needed - any aspect ratio</p>
+                    </div>
+                    
+                    <div class="flex items-center space-x-3">
+                        <button type="button" id="apply-recrop-btn"
+                                class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-full text-sm">
+                            Apply Re-crop
+                        </button>
+                        <button type="button" id="cancel-recrop-btn"
+                                class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-4 rounded-full text-sm">
+                            Cancel
+                        </button>
+                    </div>
+                    
+                    <div id="recrop-status" class="mt-3 hidden"></div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        return modal;
+    }
+    
+    // Open re-crop modal
+    function openRecropPhoto(guestId, guestName, imageUrl) {
+        currentGuestId = guestId;
+        
+        // Create modal if it doesn't exist
+        if (!recropModal) {
+            recropModal = createRecropModal();
+        }
+        
+        // Set title and show modal
+        document.getElementById('recrop-title').textContent = `Re-crop Photo for ${guestName}`;
+        recropModal.classList.remove('hidden');
+        
+        // Load existing image
+        const image = document.getElementById('recrop-image');
+        image.src = imageUrl;
+        
+        // Initialize cropper when image loads
+        image.onload = function() {
+            if (recropCropper) {
+                recropCropper.destroy();
+            }
+            
+            recropCropper = new Cropper(image, {
+                aspectRatio: NaN, // Free aspect ratio
+                viewMode: 1,
+                autoCropArea: 1, // Start with full image selected
+                movable: true,
+                scalable: true,
+                rotatable: false,
+                zoomable: true,
+                minCropBoxWidth: 100,
+                minCropBoxHeight: 100
+            });
+        };
+    }
+    
+    // Handle re-crop apply button (event delegation)
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.id === 'apply-recrop-btn') {
+            if (!recropCropper || !currentGuestId) return;
+            
+            const canvas = recropCropper.getCroppedCanvas({
+                maxWidth: 800,
+                maxHeight: 600,
+                imageSmoothingQuality: 'high'
+            });
+            
+            canvas.toBlob(function(blob) {
+                const formData = new FormData();
+                formData.append('friendship_photo', blob, 'recropped-photo.jpg');
+                formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+                
+                const statusDiv = document.getElementById('recrop-status');
+                const applyButton = document.getElementById('apply-recrop-btn');
+                const originalButtonText = applyButton.textContent;
+                
+                // Update UI
+                applyButton.disabled = true;
+                applyButton.textContent = 'Re-cropping...';
+                statusDiv.classList.add('hidden');
+                
+                // Upload re-cropped photo
+                fetch(`/admin/guests/${currentGuestId}/upload-photo`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Show success message
+                        statusDiv.className = 'mt-3 bg-green-100 border border-green-400 text-green-700 px-3 py-2 rounded text-sm';
+                        statusDiv.textContent = 'Photo re-cropped successfully!';
+                        statusDiv.classList.remove('hidden');
+                        
+                        // Update the photo in the table
+                        setTimeout(() => {
+                            location.reload(); // Simple refresh to show new photo
+                        }, 1000);
+                        
+                        // Close modal after delay
+                        setTimeout(() => {
+                            recropModal.classList.add('hidden');
+                            if (recropCropper) {
+                                recropCropper.destroy();
+                                recropCropper = null;
+                            }
+                        }, 2000);
+                    } else {
+                        // Show error
+                        statusDiv.className = 'mt-3 bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded text-sm';
+                        statusDiv.textContent = data.message || 'Re-crop failed. Please try again.';
+                        statusDiv.classList.remove('hidden');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    statusDiv.className = 'mt-3 bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded text-sm';
+                    statusDiv.textContent = 'Re-crop failed. Please try again.';
+                    statusDiv.classList.remove('hidden');
+                })
+                .finally(() => {
+                    applyButton.disabled = false;
+                    applyButton.textContent = originalButtonText;
+                });
+            }, 'image/jpeg', 0.9);
+        }
+        
+        if (e.target && e.target.id === 'cancel-recrop-btn') {
+            recropModal.classList.add('hidden');
+            if (recropCropper) {
+                recropCropper.destroy();
+                recropCropper = null;
             }
         }
     });
