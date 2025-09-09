@@ -17,6 +17,7 @@ return [
     'activities' => 'Activiteiten',
     'contact' => 'Contact',
     'questions' => 'Vragen?',
+    'parent_contact_info' => 'Moeder: Myrthe <a href="tel:+31618391160">📞 06 18 39 11 60</a> <a href="https://wa.me/31618391160" target="_blank" rel="noopener" class="ml-2 text-green-600 hover:text-green-800">💬 WhatsApp</a> | Vader: Matthew <a href="tel:+31611767323">📞 06 11 767 323</a> <a href="https://wa.me/31611767323" target="_blank" rel="noopener" class="ml-2 text-green-600 hover:text-green-800">💬 WhatsApp</a>',
 
     // RSVP
     'rsvp' => 'RSVP',
@@ -42,7 +43,7 @@ return [
     'message_placeholder' => 'Laat een lief berichtje achter voor :name!',
     'upload_drawing' => 'Voeg een tekening toe',
     'upload_photo' => 'Voeg een foto toe',
-    'record_audio' => 'Neem geluid op',
+    'record_audio' => 'Neem een berichtje op',
     'send_message' => 'Versturen 🎉',
     'guestbook' => 'Gastenboek',
 
@@ -99,4 +100,6 @@ return [
     'gift_claim_success' => 'Bedankt! Je hebt dit cadeau succesvol geclaimd',
     'gift_already_claimed' => 'Dit cadeau is al door iemand anders geclaimd.',
     'language_switched' => 'Taal gewijzigd naar Nederlands',
+    'wish_list_body' => 'Wil je een cadeautje voor Liam kopen? Hier is zijn verlanglijstje! 🎁',
+    'wish_list_button' => 'Bekijk verlanglijstje',
 ];

@@ -16,6 +16,7 @@ return [
     'activities' => 'Activities',
     'contact' => 'Contact',
     'questions' => 'Questions?',
+    'parent_contact_info' => 'Mom: Myrthe 06 18 39 11 60 | Dad: Matthew 06 11 767 323',
 
     // RSVP
     'rsvp' => 'RSVP',
@@ -101,4 +102,6 @@ return [
     'gift_claim_success' => 'Thank you! You have successfully claimed',
     'gift_already_claimed' => 'This gift has already been claimed by someone else.',
     'language_switched' => 'Language changed to English',
+    'wish_list_body' => 'Want to bring a gift? Check out Liam\'s birthday wishlist to see what he\'d love most!',
+    'wish_list_button' => 'View Wishlist'
 ];

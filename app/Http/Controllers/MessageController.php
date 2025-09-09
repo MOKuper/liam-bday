@@ -29,16 +29,30 @@ class MessageController extends Controller
                 'message' => 'required|string|max:1000',
                 'drawing' => 'nullable|image|max:5120', // 5MB max
                 'photo' => 'nullable|image|max:5120',
-                'audio' => 'nullable|mimetypes:audio/mpeg,audio/mp3,audio/wav,audio/wave,audio/x-wav,audio/m4a,audio/mp4,audio/webm,audio/ogg,audio/x-m4a|max:10240', // 10MB max
+                'audio' => 'nullable|file|max:2048', // 2MB max (within PHP limits)
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             if ($request->wantsJson() || $request->ajax()) {
                 $errors = $e->errors();
                 $message = 'Controleer je invoer en probeer het opnieuw.';
                 
+                // Add debug information for audio files
+                $debugInfo = [];
+                if ($request->hasFile('audio')) {
+                    $audioFile = $request->file('audio');
+                    $debugInfo['audio_debug'] = [
+                        'original_name' => $audioFile->getClientOriginalName(),
+                        'mime_type' => $audioFile->getMimeType(),
+                        'size' => $audioFile->getSize(),
+                        'extension' => $audioFile->getClientOriginalExtension(),
+                        'is_valid' => $audioFile->isValid(),
+                    ];
+                }
+                
                 // Provide specific error messages for common issues
                 if (isset($errors['audio'])) {
-                    $message = 'Er is een probleem met het audiobestand. Probeer opnieuw op te nemen of gebruik een ander bestand.';
+                    $message = 'Audio probleem: ' . implode(', ', $errors['audio']) . 
+                              ($debugInfo ? ' | Debug: ' . json_encode($debugInfo) : '');
                 } elseif (isset($errors['photo']) || isset($errors['drawing'])) {
                     $message = 'Het bestand is te groot of heeft een ongeldig formaat. Probeer een kleiner bestand.';
                 }
@@ -46,7 +60,8 @@ class MessageController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => $message,
-                    'errors' => $errors
+                    'errors' => $errors,
+                    'debug' => $debugInfo
                 ], 422);
             }
             throw $e;
