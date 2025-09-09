@@ -484,7 +484,8 @@
                         {{ __('messages.gift_ideas') }}
                         <span class="floating-emoji">🎁</span>
                     </h3>
-                    <p class="text-lg">{{ $partyDetails->gift_suggestions }}</p>
+                    <p class="text-lg"> {{ __('messages.gift_ideas_body') }}
+                    </p>
                 </div>
             @endif
         </div>

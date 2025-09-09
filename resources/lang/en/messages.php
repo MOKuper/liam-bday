@@ -103,5 +103,6 @@ return [
     'gift_already_claimed' => 'This gift has already been claimed by someone else.',
     'language_switched' => 'Language changed to English',
     'wish_list_body' => 'Want to bring a gift? Check out Liam\'s birthday wishlist to see what he\'d love most!',
-    'wish_list_button' => 'View Wishlist'
+    'wish_list_button' => 'View Wishlist',
+    'gift_ideas_body' => 'Liam loves board games, LEGO (ninjago) and beautiful rocks',
 ];

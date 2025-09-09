@@ -102,4 +102,5 @@ return [
     'language_switched' => 'Taal gewijzigd naar Nederlands',
     'wish_list_body' => 'Wil je een cadeautje voor Liam kopen? Hier is zijn verlanglijstje! 🎁',
     'wish_list_button' => 'Bekijk verlanglijstje',
+    'gift_ideas_body' => 'Liam houdt van bordspellen, LEGO (ninjago) en mooie stenen',
 ];
