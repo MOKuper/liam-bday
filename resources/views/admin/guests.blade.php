@@ -6,12 +6,42 @@
 <div class="container mx-auto px-4 py-8">
     <div class="mb-8">
         <h1 class="text-4xl fun-font text-purple-600 mb-2">Manage Guests</h1>
-        <a href="{{ route('admin.dashboard') }}" class="text-gray-600 hover:text-gray-800">← Back to Dashboard</a>
+        <div class="flex justify-between items-center">
+            <a href="{{ route('admin.dashboard') }}" class="text-gray-600 hover:text-gray-800">← Back to Dashboard</a>
+            <div class="flex gap-4 text-sm">
+                <span class="bg-gray-100 px-3 py-1 rounded-full">
+                    Total: <strong>{{ $guests->count() }}</strong>
+                </span>
+                <span class="bg-green-100 px-3 py-1 rounded-full text-green-800">
+                    Confirmed: <strong>{{ $guests->filter(fn($g) => $g->rsvp && $g->rsvp->status === 'confirmed')->count() }}</strong>
+                </span>
+                <span class="bg-yellow-100 px-3 py-1 rounded-full text-yellow-800">
+                    Pending: <strong>{{ $guests->filter(fn($g) => !$g->rsvp)->count() }}</strong>
+                </span>
+            </div>
+        </div>
     </div>
 
-    <!-- CSV Import Section -->
-    <div class="bg-blue-50 rounded-xl shadow-md p-6 mb-8">
-        <h2 class="text-2xl font-bold text-blue-800 mb-4">📤 Bulk Import Guests</h2>
+    <!-- Quick Actions Bar -->
+    <div class="flex flex-wrap gap-3 mb-6">
+        <button onclick="toggleSection('bulk-import')" 
+                class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2">
+            📤 Bulk Import
+        </button>
+        <button onclick="toggleSection('add-single')" 
+                class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2">
+            ➕ Add Single Guest
+        </button>
+    </div>
+
+    <!-- CSV Import Section (Initially Hidden) -->
+    <div id="bulk-import" class="hidden bg-blue-50 rounded-xl shadow-md p-6 mb-8">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold text-blue-800">📤 Bulk Import Guests</h2>
+            <button onclick="toggleSection('bulk-import')" class="text-gray-500 hover:text-gray-700">
+                ✕
+            </button>
+        </div>
         
         <div class="grid md:grid-cols-2 gap-6">
             <div>
@@ -58,9 +88,14 @@
         @endif
     </div>
 
-    <!-- Add New Guest Form -->
-    <div class="bg-white rounded-xl shadow-md p-6 mb-8">
-        <h2 class="text-2xl font-bold text-gray-800 mb-4">Add Single Guest</h2>
+    <!-- Add New Guest Form (Initially Hidden) -->
+    <div id="add-single" class="hidden bg-white rounded-xl shadow-md p-6 mb-8">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold text-gray-800">Add Single Guest</h2>
+            <button type="button" onclick="toggleSection('add-single')" class="text-gray-500 hover:text-gray-700">
+                ✕
+            </button>
+        </div>
         
         <form action="{{ route('admin.guests.store') }}" method="POST" enctype="multipart/form-data" class="grid md:grid-cols-2 gap-4">
             @csrf
@@ -171,11 +206,13 @@
         </form>
     </div>
 
-    <!-- Guests List -->
-    <div class="bg-white rounded-xl shadow-md overflow-hidden">
-        <div class="px-6 py-4 bg-gray-50 border-b flex justify-between items-center">
-            <h2 class="text-xl font-bold text-gray-800">Guest List ({{ $guests->count() }})</h2>
-            <div class="space-x-2">
+    <!-- Guests List (Main Section) -->
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden border-2 border-purple-100">
+        <div class="px-6 py-4 bg-gradient-to-r from-purple-50 to-pink-50 border-b flex justify-between items-center">
+            <h2 class="text-2xl font-bold text-purple-800 flex items-center gap-2">
+                <span>🎉</span> Guest List
+            </h2>
+            <div class="flex items-center gap-3">
                 <a href="{{ route('admin.guests.export') }}" class="inline-block bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg text-sm">
                     📥 Export to CSV
                 </a>
@@ -186,6 +223,29 @@
                     </button>
                 </form>
             </div>
+        </div>
+        
+        @if($guests->isEmpty())
+            <div class="p-12 text-center">
+                <div class="text-6xl mb-4">👥</div>
+                <h3 class="text-xl font-semibold text-gray-700 mb-2">No guests yet!</h3>
+                <p class="text-gray-500 mb-6">Start by adding guests one at a time or importing from a CSV file.</p>
+                <div class="flex justify-center gap-3">
+                    <button onclick="toggleSection('add-single')" 
+                            class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-6 rounded-full">
+                        Add First Guest
+                    </button>
+                    <button onclick="toggleSection('bulk-import')" 
+                            class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-full">
+                        Import CSV
+                    </button>
+                </div>
+            </div>
+        @else
+        <!-- Quick Search -->
+        <div class="px-6 py-3 bg-gray-50 border-b">
+            <input type="text" id="guest-search" placeholder="🔍 Search guests by name, email, or phone..." 
+                   class="w-full max-w-md px-4 py-2 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-1 focus:ring-purple-500">
         </div>
         
         <div class="overflow-x-auto">
@@ -314,6 +374,7 @@
                 </tbody>
             </table>
         </div>
+        @endif
     </div>
 </div>
 
@@ -880,6 +941,42 @@
                 recropCropper.destroy();
                 recropCropper = null;
             }
+        }
+    });
+    
+    // Toggle section visibility
+    function toggleSection(sectionId) {
+        const section = document.getElementById(sectionId);
+        const otherSection = sectionId === 'bulk-import' ? 'add-single' : 'bulk-import';
+        
+        // Hide the other section
+        document.getElementById(otherSection).classList.add('hidden');
+        
+        // Toggle current section
+        section.classList.toggle('hidden');
+        
+        // Smooth scroll to section if opening
+        if (!section.classList.contains('hidden')) {
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+    
+    // Guest search functionality
+    document.getElementById('guest-search')?.addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+        const rows = document.querySelectorAll('tbody tr');
+        
+        rows.forEach(row => {
+            const name = row.querySelector('.text-sm.font-medium')?.textContent.toLowerCase() || '';
+            const email = row.querySelector('.text-gray-500')?.textContent.toLowerCase() || '';
+            const visible = name.includes(searchTerm) || email.includes(searchTerm);
+            row.style.display = visible ? '' : 'none';
+        });
+        
+        // Show message if no results
+        const visibleRows = Array.from(rows).filter(row => row.style.display !== 'none');
+        if (visibleRows.length === 0 && searchTerm.length > 0) {
+            // You could add a "no results" message here
         }
     });
 </script>
