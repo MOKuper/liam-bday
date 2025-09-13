@@ -23,6 +23,7 @@ return [
     'rsvp' => 'RSVP',
     'will_you_attend' => 'Kom je naar het feest?',
     'yes_attending' => 'Ja, we komen! 🎉',
+    'unsure_attending' => 'Ik weet het nog niet zeker 🤔',
     'no_attending' => 'Helaas kunnen we niet komen 😢',
     'adults' => 'Volwassenen',
     'children' => 'Kinderen',

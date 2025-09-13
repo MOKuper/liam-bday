@@ -6,6 +6,7 @@ use App\Http\Controllers\RsvpController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\GiftController;
+use App\Http\Controllers\InvitationController;
 
 // Public routes
 Route::get('/', function () {
@@ -73,4 +74,8 @@ Route::prefix('admin')->name('admin.')->middleware('auth.basic.custom')->group(f
     Route::post('/gifts/{gift}/toggle', [GiftController::class, 'toggleStatus'])->name('gifts.toggle');
     Route::post('/gifts/{gift}/unclaim', [GiftController::class, 'unclaim'])->name('gifts.unclaim');
     Route::delete('/gifts/{gift}', [GiftController::class, 'destroy'])->name('gifts.destroy');
+    
+    // Invitation generation routes
+    Route::get('/invitations/{guest}/generate/{theme?}', [InvitationController::class, 'generateInvitation'])->name('invitations.generate');
+    Route::get('/invitations/{guest}/download/{theme?}', [InvitationController::class, 'download'])->name('invitations.download');
 });

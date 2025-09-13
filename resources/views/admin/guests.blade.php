@@ -253,18 +253,27 @@
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Photo</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Language</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">RSVP Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">QR Code</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable('name')">
+                            Name <span id="sort-name" class="ml-1">↕️</span>
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable('rsvp')">
+                            RSVP Status <span id="sort-rsvp" class="ml-1">↕️</span>
+                        </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invitation Link</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable('age')">
+                            Age <span id="sort-age" class="ml-1">↕️</span>
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable('language')">
+                            Language <span id="sort-language" class="ml-1">↕️</span>
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">QR Code</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     @foreach($guests as $guest)
-                    <tr>
+                    <tr data-name="{{ $guest->name }}" data-rsvp="{{ $guest->rsvp ? $guest->rsvp->status : 'no_response' }}" data-age="{{ $guest->getAge() ?? 0 }}" data-language="{{ $guest->preferred_language }}">
+                        <!-- Photo -->
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="relative group">
                                 @if($guest->friendship_photo_path)
@@ -300,6 +309,8 @@
                                 </div>
                             </div>
                         </td>
+                        
+                        <!-- Name -->
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm font-medium text-gray-900">{{ $guest->name }}</div>
                             @if($guest->email)
@@ -309,21 +320,8 @@
                                 <div class="text-sm text-gray-500">{{ $guest->phone }}</div>
                             @endif
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            @if($guest->date_of_birth)
-                                <div>{{ $guest->getAge() }} years</div>
-                                <div class="text-xs text-gray-400">{{ $guest->getFormattedDateOfBirth() }}</div>
-                            @else
-                                -
-                            @endif
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <button onclick="toggleLanguage({{ $guest->id }}, '{{ $guest->preferred_language }}')"
-                                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full cursor-pointer hover:opacity-80 transition-opacity
-                                        {{ $guest->preferred_language == 'nl' ? 'bg-orange-100 text-orange-800 hover:bg-orange-200' : 'bg-blue-100 text-blue-800 hover:bg-blue-200' }}">
-                                {{ $guest->preferred_language == 'nl' ? '🇳🇱 Dutch' : '🇬🇧 English' }}
-                            </button>
-                        </td>
+                        
+                        <!-- RSVP Status -->
                         <td class="px-6 py-4 whitespace-nowrap">
                             @if($guest->rsvp)
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
@@ -336,6 +334,39 @@
                                 </span>
                             @endif
                         </td>
+                        
+                        <!-- Invitation Link -->
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <div class="flex items-center space-x-2">
+                                <input type="text" value="{{ url('/invite/' . $guest->unique_url) }}" 
+                                       class="text-xs bg-gray-50 px-2 py-1 rounded w-64" readonly>
+                                <button onclick="navigator.clipboard.writeText('{{ url('/invite/' . $guest->unique_url) }}')" 
+                                        class="text-purple-600 hover:text-purple-800">
+                                    📋
+                                </button>
+                            </div>
+                        </td>
+                        
+                        <!-- Age -->
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            @if($guest->date_of_birth)
+                                <div>{{ $guest->getAge() }} years</div>
+                                <div class="text-xs text-gray-400">{{ $guest->getFormattedDateOfBirth() }}</div>
+                            @else
+                                -
+                            @endif
+                        </td>
+                        
+                        <!-- Language -->
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <button onclick="toggleLanguage({{ $guest->id }}, '{{ $guest->preferred_language }}')"
+                                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full cursor-pointer hover:opacity-80 transition-opacity
+                                        {{ $guest->preferred_language == 'nl' ? 'bg-orange-100 text-orange-800 hover:bg-orange-200' : 'bg-blue-100 text-blue-800 hover:bg-blue-200' }}">
+                                {{ $guest->preferred_language == 'nl' ? '🇳🇱 Dutch' : '🇬🇧 English' }}
+                            </button>
+                        </td>
+                        
+                        <!-- QR Code -->
                         <td class="px-6 py-4 whitespace-nowrap text-center">
                             <div class="flex items-center justify-center space-x-2">
                                 <img src="{{ $guest->getQrCodeUrl() }}" alt="QR Code for {{ $guest->name }}" 
@@ -347,16 +378,8 @@
                                 </a>
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <div class="flex items-center space-x-2">
-                                <input type="text" value="{{ url('/invite/' . $guest->unique_url) }}" 
-                                       class="text-xs bg-gray-50 px-2 py-1 rounded w-64" readonly>
-                                <button onclick="navigator.clipboard.writeText('{{ url('/invite/' . $guest->unique_url) }}')" 
-                                        class="text-purple-600 hover:text-purple-800">
-                                    📋
-                                </button>
-                            </div>
-                        </td>
+                        
+                        <!-- Actions -->
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                             <div class="flex items-center space-x-2">
                                 <button onclick="editGuest({{ $guest->id }})" 
@@ -979,6 +1002,76 @@
             // You could add a "no results" message here
         }
     });
+    
+    // Table sorting functionality
+    let currentSort = { column: '', direction: 'asc' };
+    
+    function sortTable(column) {
+        const tbody = document.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        
+        // Toggle sort direction
+        if (currentSort.column === column) {
+            currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+        } else {
+            currentSort.column = column;
+            currentSort.direction = 'asc';
+        }
+        
+        // Update sort indicators
+        updateSortIndicators(column, currentSort.direction);
+        
+        // Sort rows
+        rows.sort((a, b) => {
+            let aValue, bValue;
+            
+            switch(column) {
+                case 'name':
+                    aValue = a.dataset.name.toLowerCase();
+                    bValue = b.dataset.name.toLowerCase();
+                    break;
+                case 'rsvp':
+                    // Custom order: confirmed, pending, declined, no_response
+                    const rsvpOrder = { 'confirmed': 1, 'pending': 2, 'declined': 3, 'no_response': 4 };
+                    aValue = rsvpOrder[a.dataset.rsvp] || 4;
+                    bValue = rsvpOrder[b.dataset.rsvp] || 4;
+                    break;
+                case 'age':
+                    aValue = parseInt(a.dataset.age) || 0;
+                    bValue = parseInt(b.dataset.age) || 0;
+                    break;
+                case 'language':
+                    aValue = a.dataset.language;
+                    bValue = b.dataset.language;
+                    break;
+                default:
+                    return 0;
+            }
+            
+            if (currentSort.direction === 'asc') {
+                return aValue > bValue ? 1 : (aValue < bValue ? -1 : 0);
+            } else {
+                return aValue < bValue ? 1 : (aValue > bValue ? -1 : 0);
+            }
+        });
+        
+        // Reorder rows in DOM
+        rows.forEach(row => tbody.appendChild(row));
+    }
+    
+    function updateSortIndicators(activeColumn, direction) {
+        // Reset all indicators
+        ['name', 'rsvp', 'age', 'language'].forEach(col => {
+            const indicator = document.getElementById(`sort-${col}`);
+            if (indicator) {
+                if (col === activeColumn) {
+                    indicator.textContent = direction === 'asc' ? '↑' : '↓';
+                } else {
+                    indicator.textContent = '↕️';
+                }
+            }
+        });
+    }
 </script>
 @endpush
 @endsection

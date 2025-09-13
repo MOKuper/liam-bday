@@ -327,6 +327,11 @@
                                     {{ $guest->rsvp && $guest->rsvp->status == 'confirmed' ? 'checked' : '' }}>
                                 <span class="text-lg">{{ __('messages.yes_attending') }}</span>
                             </label>
+                            <label class="flex items-center bg-white rounded-lg p-4 hover:bg-yellow-50 cursor-pointer transition-all hover:scale-105 shadow-sm">
+                                <input type="radio" name="status" value="unsure" class="mr-3 w-5 h-5 text-yellow-600"
+                                    {{ $guest->rsvp && $guest->rsvp->status == 'unsure' ? 'checked' : '' }}>
+                                <span class="text-lg">{{ __('messages.unsure_attending') }}</span>
+                            </label>
                             <label class="flex items-center bg-white rounded-lg p-4 hover:bg-red-50 cursor-pointer transition-all hover:scale-105 shadow-sm">
                                 <input type="radio" name="status" value="declined" class="mr-3 w-5 h-5 text-red-600"
                                     {{ $guest->rsvp && $guest->rsvp->status == 'declined' ? 'checked' : '' }}>

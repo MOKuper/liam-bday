@@ -22,6 +22,7 @@ return [
     'rsvp' => 'RSVP',
     'will_you_attend' => 'Will you be attending?',
     'yes_attending' => 'Yes, we\'ll be there! 🎉',
+    'unsure_attending' => 'I\'m not sure yet 🤔',
     'no_attending' => 'Sorry, can\'t make it 😢',
     'adults' => 'Adults',
     'children' => 'Children',
