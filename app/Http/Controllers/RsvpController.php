@@ -11,7 +11,7 @@ class RsvpController extends Controller
     public function store(Request $request, Guest $guest)
     {
         $validated = $request->validate([
-            'status' => 'required|in:confirmed,declined',
+            'status' => 'required|in:confirmed,declined,unsure',
             'adults_attending' => 'required_if:status,confirmed|integer|min:0|max:10',
             'children_attending' => 'required_if:status,confirmed|integer|min:0|max:10',
             'dietary_restrictions' => 'nullable|string|max:500',

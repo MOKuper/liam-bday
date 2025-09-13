@@ -31,6 +31,7 @@ return [
     'current_status' => 'Current Status',
     'confirmed' => 'Confirmed',
     'declined' => 'Declined',
+    'unsure' => 'Unsure',
     'pending' => 'Pending',
     'attending' => 'Attending',
     'submit_rsvp' => 'Submit RSVP',

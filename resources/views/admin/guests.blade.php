@@ -16,6 +16,12 @@
                     Confirmed: <strong>{{ $guests->filter(fn($g) => $g->rsvp && $g->rsvp->status === 'confirmed')->count() }}</strong>
                 </span>
                 <span class="bg-yellow-100 px-3 py-1 rounded-full text-yellow-800">
+                    Unsure: <strong>{{ $guests->filter(fn($g) => $g->rsvp && $g->rsvp->status === 'unsure')->count() }}</strong>
+                </span>
+                <span class="bg-red-100 px-3 py-1 rounded-full text-red-800">
+                    Declined: <strong>{{ $guests->filter(fn($g) => $g->rsvp && $g->rsvp->status === 'declined')->count() }}</strong>
+                </span>
+                <span class="bg-gray-100 px-3 py-1 rounded-full text-gray-800">
                     Pending: <strong>{{ $guests->filter(fn($g) => !$g->rsvp)->count() }}</strong>
                 </span>
             </div>
@@ -325,8 +331,12 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             @if($guest->rsvp)
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                    {{ $guest->rsvp->status == 'confirmed' ? 'bg-green-100 text-green-800' : ($guest->rsvp->status == 'declined' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800') }}">
-                                    {{ ucfirst($guest->rsvp->status) }}
+                                    {{ $guest->rsvp->status == 'confirmed' ? 'bg-green-100 text-green-800' : ($guest->rsvp->status == 'declined' ? 'bg-red-100 text-red-800' : ($guest->rsvp->status == 'unsure' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800')) }}">
+                                    @if($guest->rsvp->status == 'unsure')
+                                        Unsure 🤔
+                                    @else
+                                        {{ ucfirst($guest->rsvp->status) }}
+                                    @endif
                                 </span>
                             @else
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
@@ -1031,8 +1041,8 @@
                     bValue = b.dataset.name.toLowerCase();
                     break;
                 case 'rsvp':
-                    // Custom order: confirmed, pending, declined, no_response
-                    const rsvpOrder = { 'confirmed': 1, 'pending': 2, 'declined': 3, 'no_response': 4 };
+                    // Custom order: confirmed, unsure, declined, pending, no_response
+                    const rsvpOrder = { 'confirmed': 1, 'unsure': 2, 'declined': 3, 'pending': 4, 'no_response': 5 };
                     aValue = rsvpOrder[a.dataset.rsvp] || 4;
                     bValue = rsvpOrder[b.dataset.rsvp] || 4;
                     break;

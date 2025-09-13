@@ -32,6 +32,7 @@ return [
     'current_status' => 'Huidige status',
     'confirmed' => 'Bevestigd',
     'declined' => 'Afgezegd',
+    'unsure' => 'Onzeker',
     'pending' => 'In afwachting',
     'attending' => 'Komt',
     'submit_rsvp' => 'RSVP Verzenden',

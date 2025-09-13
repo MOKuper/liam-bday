@@ -302,6 +302,8 @@
                                     ✅ {{ __('messages.confirmed') }}
                                 @elseif($guest->rsvp->status == 'declined')
                                     ❌ {{ __('messages.declined') }}
+                                @elseif($guest->rsvp->status == 'unsure')
+                                    🤔 {{ __('messages.unsure_attending') }}
                                 @else
                                     ⏳ {{ __('messages.pending') }}
                                 @endif
